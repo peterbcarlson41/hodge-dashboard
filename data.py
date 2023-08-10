@@ -1,5 +1,4 @@
 import pandas as pd
-import matplotlib.pyplot as plt
 
 # As of now, data has to be manually exported from sheet into csv format
 
