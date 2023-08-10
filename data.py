@@ -1,23 +1,30 @@
 import pandas as pd
+import time
 
-#The Google Sheet Data
+# The Google Sheet Data
 sheet_id = "1vVZvQtGuXmNV0adDhYsE1kzQjs6iEcVbmDgQsfEj_HQ"
 sheet_name = "audit_inputs"
 url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet={sheet_name}"
 
 # Replace these to import different areas of the data
-end_index_y = 470
 end_index_x = 16
+min_completion_percentage = 0.5  # Minimum completion percentage for a row to be considered complete
 
 def get_data():
     df = pd.read_csv(url)
 
     # Trim data
-    df = df.head(end_index_y)
-    df = df.iloc[:end_index_y, :end_index_x]
+    df = df.iloc[:, :end_index_x]
 
-    return df
+    # Filter rows with at least 50% completeness. Gets rid of any incomplete audit data
+    complete_rows = df[df.apply(row_completion, axis=1) >= min_completion_percentage]
+
+    return complete_rows
+
+def row_completion(row):
+    return sum(row.notnull()) / len(row)
 
 if __name__ == "__main__":
     df = get_data()
+
     print(df)
