@@ -11,6 +11,8 @@ from data import get_data
 
 full_data = get_data()
 
+server = ""
+
 # Function to create stacked bar plot
 def create_stacked_bar_plot(data):
     category_by_restaurant = pd.concat([data["Restaurant"], data["Primary category"]], axis=1)
@@ -26,25 +28,21 @@ def create_stacked_bar_plot(data):
     
     return fig
 
-def create_dashboard():
-    # Sample data obtained from the get_data function (replace this with your actual data)
-    full_data = get_data()
 
-    # Create the stacked bar plot
-    fig = create_stacked_bar_plot(full_data)
+full_data = get_data()
 
-    # Create the Dash app
-    app = dash.Dash(__name__)
-    server = app.server
+# Create the stacked bar plot
+fig = create_stacked_bar_plot(full_data)
 
-    # Define the app layout
-    app.layout = html.Div([
-        dcc.Graph(figure=fig),
-    ])
+# Create the Dash app
+app = dash.Dash(__name__)
+server = app.server
 
-    if __name__ == '__main__':
-        app.run_server(debug=False)
+# Define the app layout
+app.layout = html.Div([
+    dcc.Graph(figure=fig),
+])
 
-# Entry point
 if __name__ == '__main__':
-    create_dashboard()
+    app.run_server(debug=False)
+    
