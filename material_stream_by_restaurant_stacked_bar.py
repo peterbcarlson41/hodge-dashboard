@@ -35,6 +35,7 @@ pio.write_html(fig, file=html_filename)
 
 # Create the Dash app
 app = dash.Dash(__name__)
+server = app.server
 
 # Define the app layout
 app.layout = html.Div([
@@ -42,4 +43,4 @@ app.layout = html.Div([
 ])
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)
