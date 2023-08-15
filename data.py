@@ -1,5 +1,4 @@
 import pandas as pd
-import time
 
 # The Google Sheet Data
 sheet_id = "1vVZvQtGuXmNV0adDhYsE1kzQjs6iEcVbmDgQsfEj_HQ"
@@ -16,8 +15,8 @@ def get_data():
     # Trim data
     df = df.iloc[:, :end_index_x]
 
-    # Filter rows with at least 50% completeness. Gets rid of any incomplete audit data
-    complete_rows = df[df.apply(row_completion, axis=1) >= min_completion_percentage]
+    # Filter rows with at least 50% completeness and no "null" value in the "Restaurants" column
+    complete_rows = df[(df.apply(row_completion, axis=1) >= min_completion_percentage) & (df['Restaurant'] != "null")]
 
     return complete_rows
 
