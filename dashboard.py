@@ -77,6 +77,9 @@ stacked_bar = create_stacked_bar_plot(['All'])
 
 # Define the app layout using Dash Bootstrap components
 app.layout = dbc.Container([
+    html.Center(
+        html.H1("Material Audit Dashboard"),
+    ),
     dbc.Row([
         dbc.Col([
             dcc.Checklist(
@@ -88,7 +91,18 @@ app.layout = dbc.Container([
                     {'label': 'All', 'value': 'All'}
                 ],
                 value=['All'],
+                inline=True,
             ),
+        ]),
+       dbc.Col([
+            dcc.Dropdown(
+                id='new-dropdown',
+                options=[
+                    {'label': category, 'value': category} for category in full_data['High Level Category'].unique()
+                ],
+                value=full_data['High Level Category'].unique(),
+                multi=True,
+            )
         ]),
     ]),
     dbc.Row([
