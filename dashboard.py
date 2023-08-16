@@ -17,16 +17,27 @@ unique_categories = full_data['Primary category'].unique()
 category_colors = {category: px.colors.qualitative.Dark24[i % len(px.colors.qualitative.Light24)]
                    for i, category in enumerate(unique_categories)}
 
-#filter the data based on selected criteria
-def filter_data(selected_types):
-    if 'All' in selected_types:
-        return full_data
-    else:
-        return full_data[full_data['Type'].isin(selected_types)]
+
+def filter_data(selected_types, single_ingredient_value):
+    filtered_data = full_data
+    
+    # Apply filtering based on selected types
+    if 'All' not in selected_types:
+        filtered_data = filtered_data[filtered_data['Type'].isin(selected_types)]
+    
+    # Apply filtering based on single ingredient checkbox values
+    if 'Yes' in single_ingredient_value and 'No' not in single_ingredient_value:
+        filtered_data = filtered_data[filtered_data['Single Ingredient?'] == 'Y']
+    elif 'No' in single_ingredient_value and 'Yes' not in single_ingredient_value:
+        filtered_data = filtered_data[filtered_data['Single Ingredient?'] == 'N']
+    
+    return filtered_data
+
+    
 
 # Updated function to create stacked bar plot
-def create_stacked_bar_plot(selected_types):
-    filtered_data = filter_data(selected_types)
+def create_stacked_bar_plot(selected_types, single_ingredient_value):
+    filtered_data = filter_data(selected_types, single_ingredient_value)
     category_by_restaurant = pd.concat([filtered_data["Restaurant"], filtered_data["Primary category"]], axis=1)
     category_stacked = category_by_restaurant.groupby(['Restaurant', 'Primary category']).size().unstack().fillna(0)
     
@@ -72,8 +83,8 @@ def create_pie_chart(data, selected_restaurant):
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server
 
-# Create the stacked bar plot
-stacked_bar = create_stacked_bar_plot(['All'])
+# Create the default stacked bar plot
+stacked_bar = create_stacked_bar_plot(['All'], ['Yes', 'No'])
 
 # Define the app layout using Dash Bootstrap components
 app.layout = dbc.Container([
@@ -101,9 +112,8 @@ app.layout = dbc.Container([
                 options=[
                     {'label': 'Yes', 'value': 'Yes'},
                     {'label': 'No', 'value': 'No'},
-                    {'label': 'All', 'value': 'All'},
                 ],
-                value=['All'],
+                value=['Yes', 'No'],
             ),
         ]),
         dbc.Col([
@@ -127,27 +137,29 @@ app.layout = dbc.Container([
     ])
 ])
 
-# Callback to update zoomed-in stacked bar chart and pie chart based on selected types
+# Callback to update stacked bar chart, zoomed-in stacked bar chart, and pie chart based on selected values
 @app.callback(
     [Output('stacked-bar', 'figure'),
      Output('zoomed-stacked-bar', 'figure'),
      Output('pie-chart', 'figure')],
     [Input('stacked-bar', 'clickData'),
-     Input('type-checklist', 'value')]
+     Input('type-checklist', 'value'),
+     Input('single-ingredient-checklist', 'value')]
 )
-def update_charts(clickData, selected_types):
-    filtered_data = filter_data(selected_types)
+def update_charts(clickData, selected_types, single_ingredient_value):
+    filtered_data = filter_data(selected_types, single_ingredient_value)
     
     if clickData is None:
         selected_restaurant = filtered_data['Restaurant'].iloc[0]  # Default to the first restaurant
     else:
         selected_restaurant = clickData['points'][0]['x']
     
-    stacked_bar_updated = create_stacked_bar_plot(selected_types)
+    stacked_bar_updated = create_stacked_bar_plot(selected_types, single_ingredient_value)
     zoomed_stacked_bar = create_zoomed_stacked_bar_plot(filtered_data, selected_restaurant)
     pie_chart = create_pie_chart(filtered_data, selected_restaurant)
     
     return stacked_bar_updated, zoomed_stacked_bar, pie_chart
+
 
 if __name__ == '__main__':
     app.run_server(debug=False)
