@@ -12,6 +12,11 @@ full_data = get_data()
 
 server = ""
 
+#intialize bucket weight data
+mean_bucket_weight = full_data['Weight'].mean()
+median_bucket_weight = full_data['Weight'].median()
+
+
 # Get unique categories and assign colors programmatically
 unique_categories = full_data['Primary category'].unique()
 category_colors = {category: px.colors.qualitative.Dark24[i % len(px.colors.qualitative.Light24)]
@@ -22,8 +27,7 @@ def filter_data(selected_types, single_ingredient_value):
     filtered_data = full_data
     
     # Apply filtering based on selected types
-    if 'All' not in selected_types:
-        filtered_data = filtered_data[filtered_data['Type'].isin(selected_types)]
+    filtered_data = filtered_data[filtered_data['Type'].isin(selected_types)]
     
     # Apply filtering based on single ingredient checkbox values
     if 'Yes' in single_ingredient_value and 'No' not in single_ingredient_value:
@@ -32,7 +36,6 @@ def filter_data(selected_types, single_ingredient_value):
         filtered_data = filtered_data[filtered_data['Single Ingredient?'] == 'N']
     
     return filtered_data
-
     
 
 # Updated function to create stacked bar plot
@@ -84,7 +87,7 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server
 
 # Create the default stacked bar plot
-stacked_bar = create_stacked_bar_plot(['All'], ['Yes', 'No'])
+stacked_bar = create_stacked_bar_plot(['Pre', 'Post', 'Mixed'], ['Yes', 'No'])
 
 # Define the app layout using Dash Bootstrap components
 app.layout = dbc.Container([
@@ -100,9 +103,8 @@ app.layout = dbc.Container([
                     {'label': 'Pre', 'value': 'Pre'},
                     {'label': 'Post', 'value': 'Post'},
                     {'label': 'Mixed', 'value': 'Mixed'},
-                    {'label': 'All', 'value': 'All'}
                 ],
-                value=['All'],
+                value=['Pre', 'Post', 'Mixed'],
             ),
         ]),
         dbc.Col([
@@ -129,6 +131,12 @@ app.layout = dbc.Container([
         ]),
     ]),
     dbc.Row([
+        dbc.Col([
+            html.H6(id='mean-bucket-weight'),
+            html.H6(id='median-bucket-weight'),
+        ]),
+    ]),
+    dbc.Row([
         dbc.Col(dcc.Graph(id='stacked-bar', figure=stacked_bar), width=12),  # Full-sized stacked bar chart
     ]),
     dbc.Row([
@@ -141,7 +149,9 @@ app.layout = dbc.Container([
 @app.callback(
     [Output('stacked-bar', 'figure'),
      Output('zoomed-stacked-bar', 'figure'),
-     Output('pie-chart', 'figure')],
+     Output('pie-chart', 'figure'),
+     Output('mean-bucket-weight', 'children'),
+     Output('median-bucket-weight', 'children')],
     [Input('stacked-bar', 'clickData'),
      Input('type-checklist', 'value'),
      Input('single-ingredient-checklist', 'value')]
@@ -158,7 +168,15 @@ def update_charts(clickData, selected_types, single_ingredient_value):
     zoomed_stacked_bar = create_zoomed_stacked_bar_plot(filtered_data, selected_restaurant)
     pie_chart = create_pie_chart(filtered_data, selected_restaurant)
     
-    return stacked_bar_updated, zoomed_stacked_bar, pie_chart
+    # Calculate mean and median bucket weight values for the selected type(s)
+    mean_bucket_weight_selected = filtered_data['Weight'].mean()
+    median_bucket_weight_selected = filtered_data['Weight'].median()
+    
+    return (
+        stacked_bar_updated, zoomed_stacked_bar, pie_chart,
+        f"Mean Bucket Weight: {mean_bucket_weight_selected:.2f} lbs",
+        f"Median Bucket Weight: {median_bucket_weight_selected:.2f} lbs"
+    )
 
 
 if __name__ == '__main__':
