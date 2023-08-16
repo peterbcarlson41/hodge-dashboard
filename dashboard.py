@@ -82,6 +82,7 @@ app.layout = dbc.Container([
     ),
     dbc.Row([
         dbc.Col([
+            html.H6("Type:"), 
             dcc.Checklist(
                 id='type-checklist',
                 options=[
@@ -91,10 +92,22 @@ app.layout = dbc.Container([
                     {'label': 'All', 'value': 'All'}
                 ],
                 value=['All'],
-                inline=True,
             ),
         ]),
-       dbc.Col([
+        dbc.Col([
+            html.H6("Single Ingredient:"), 
+            dcc.Checklist(
+                id='single-ingredient-checklist',
+                options=[
+                    {'label': 'Yes', 'value': 'Yes'},
+                    {'label': 'No', 'value': 'No'},
+                    {'label': 'All', 'value': 'All'},
+                ],
+                value=['All'],
+            ),
+        ]),
+        dbc.Col([
+            html.H6("High Level Categories:"), 
             dcc.Dropdown(
                 id='new-dropdown',
                 options=[
