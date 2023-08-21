@@ -18,7 +18,7 @@ median_bucket_weight = full_data['Weight'].median()
 
 
 # Get unique categories and assign colors programmatically
-unique_categories = full_data['Primary category'].unique()
+unique_categories = full_data['Category'].unique()
 category_colors = {category: px.colors.qualitative.Dark24[i % len(px.colors.qualitative.Light24)]
                    for i, category in enumerate(unique_categories)}
 
@@ -41,8 +41,8 @@ def filter_data(selected_types, single_ingredient_value):
 # Updated function to create stacked bar plot
 def create_stacked_bar_plot(selected_types, single_ingredient_value):
     filtered_data = filter_data(selected_types, single_ingredient_value)
-    category_by_restaurant = pd.concat([filtered_data["Restaurant"], filtered_data["Primary category"]], axis=1)
-    category_stacked = category_by_restaurant.groupby(['Restaurant', 'Primary category']).size().unstack().fillna(0)
+    category_by_restaurant = pd.concat([filtered_data["Restaurant"], filtered_data["Category"]], axis=1)
+    category_stacked = category_by_restaurant.groupby(['Restaurant', 'Category']).size().unstack().fillna(0)
     
     fig = px.bar(category_stacked, x=category_stacked.index, y=category_stacked.columns,
                  color_discrete_map=category_colors,
@@ -57,8 +57,8 @@ def create_stacked_bar_plot(selected_types, single_ingredient_value):
 # Function to create zoomed-in stacked bar plot
 def create_zoomed_stacked_bar_plot(data, selected_restaurant):
     restaurant_data = data[data['Restaurant'] == selected_restaurant]
-    category_by_restaurant = pd.concat([restaurant_data["Restaurant"], restaurant_data["Primary category"]], axis=1)
-    category_stacked = category_by_restaurant.groupby(['Restaurant', 'Primary category']).size().unstack().fillna(0)
+    category_by_restaurant = pd.concat([restaurant_data["Restaurant"], restaurant_data["Category"]], axis=1)
+    category_stacked = category_by_restaurant.groupby(['Restaurant', 'Category']).size().unstack().fillna(0)
     
     fig = px.bar(category_stacked, x=category_stacked.index, y=category_stacked.columns,
                  color_discrete_map=category_colors,
@@ -74,9 +74,9 @@ def create_zoomed_stacked_bar_plot(data, selected_restaurant):
 # Function to create pie chart
 def create_pie_chart(data, selected_restaurant):
     restaurant_data = data[data['Restaurant'] == selected_restaurant]
-    category_counts_restaurant = restaurant_data.groupby('Primary category').size().reset_index(name='Count')
+    category_counts_restaurant = restaurant_data.groupby('Category').size().reset_index(name='Count')
     
-    fig = px.pie(category_counts_restaurant, values='Count', names='Primary category',
+    fig = px.pie(category_counts_restaurant, values='Count', names='Category',
                  title=f'Primary Food Waste Category for {selected_restaurant}',
                  color_discrete_map=category_colors)
     
@@ -123,9 +123,9 @@ app.layout = dbc.Container([
             dcc.Dropdown(
                 id='new-dropdown',
                 options=[
-                    {'label': category, 'value': category} for category in full_data['High Level Category'].unique()
+                    {'label': category, 'value': category} for category in full_data['Stream'].unique()
                 ],
-                value=full_data['High Level Category'].unique(),
+                value=full_data['Stream'].unique(),
                 multi=True,
             )
         ]),
