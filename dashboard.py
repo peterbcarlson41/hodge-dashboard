@@ -23,7 +23,7 @@ category_colors = {category: px.colors.qualitative.Dark24[i % len(px.colors.qual
                    for i, category in enumerate(unique_categories)}
 
 
-def filter_data(selected_types, single_ingredient_value):
+def filter_data(selected_types, single_ingredient_value, selected_categories):
     filtered_data = full_data
     
     # Apply filtering based on selected types
@@ -35,12 +35,15 @@ def filter_data(selected_types, single_ingredient_value):
     elif 'No' in single_ingredient_value and 'Yes' not in single_ingredient_value:
         filtered_data = filtered_data[filtered_data['Single Ingredient?'] == 'N']
     
+    # Apply filtering based on selected categories
+    filtered_data = filtered_data[filtered_data['Category'].isin(selected_categories)]
+    
     return filtered_data
     
 
 # Updated function to create stacked bar plot
-def create_stacked_bar_plot(selected_types, single_ingredient_value):
-    filtered_data = filter_data(selected_types, single_ingredient_value)
+def create_stacked_bar_plot(selected_types, single_ingredient_value, selected_categories):
+    filtered_data = filter_data(selected_types, single_ingredient_value, selected_categories)
     category_by_restaurant = pd.concat([filtered_data["Restaurant"], filtered_data["Stream"]], axis=1)
     category_stacked = category_by_restaurant.groupby(['Restaurant', 'Stream']).size().unstack().fillna(0)
     
@@ -86,8 +89,13 @@ def create_pie_chart(data, selected_restaurant):
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server
 
-# Create the default stacked bar plot
-stacked_bar = create_stacked_bar_plot(['Pre', 'Post', 'Mixed'], ['Yes', 'No'])
+# Create the default stacked bar plot with all values initially selected
+stacked_bar = create_stacked_bar_plot(
+    selected_types=['Pre', 'Post', 'Mixed'],
+    single_ingredient_value=['Yes', 'No'],
+    selected_categories=full_data['Category'].unique()
+)
+
 
 # Define the app layout using Dash Bootstrap components
 app.layout = dbc.Container([
@@ -122,10 +130,8 @@ app.layout = dbc.Container([
             html.H6("High Level Categories:"), 
             dcc.Dropdown(
                 id='new-dropdown',
-                options=[
-                    {'label': category, 'value': category} for category in full_data['Category'].unique()
-                ],
-                value=full_data['Category'].unique(),
+                options=[{'label': 'All Categories', 'value': 'all'}] + [{'label': category, 'value': category} for category in full_data['Category'].unique()],
+                value='all',  # Set the default value to 'all'
                 multi=True,
             )
         ]),
@@ -154,17 +160,21 @@ app.layout = dbc.Container([
      Output('median-bucket-weight', 'children')],
     [Input('stacked-bar', 'clickData'),
      Input('type-checklist', 'value'),
-     Input('single-ingredient-checklist', 'value')]
+     Input('single-ingredient-checklist', 'value'),
+     Input('new-dropdown', 'value')]  # Add input for the dropdown
 )
-def update_charts(clickData, selected_types, single_ingredient_value):
-    filtered_data = filter_data(selected_types, single_ingredient_value)
+def update_charts(clickData, selected_types, single_ingredient_value, selected_categories):
+    if 'all' in selected_categories:
+        selected_categories = full_data['Category'].unique()  # Select all categories
+
+    filtered_data = filter_data(selected_types, single_ingredient_value, selected_categories)
     
     if clickData is None:
         selected_restaurant = filtered_data['Restaurant'].iloc[0]  # Default to the first restaurant
     else:
         selected_restaurant = clickData['points'][0]['x']
     
-    stacked_bar_updated = create_stacked_bar_plot(selected_types, single_ingredient_value)
+    stacked_bar_updated = create_stacked_bar_plot(selected_types, single_ingredient_value, selected_categories)
     zoomed_stacked_bar = create_zoomed_stacked_bar_plot(filtered_data, selected_restaurant)
     pie_chart = create_pie_chart(filtered_data, selected_restaurant)
     
@@ -177,7 +187,6 @@ def update_charts(clickData, selected_types, single_ingredient_value):
         f"Mean Bucket Weight: {mean_bucket_weight_selected:.2f} lbs",
         f"Median Bucket Weight: {median_bucket_weight_selected:.2f} lbs"
     )
-
 
 if __name__ == '__main__':
     app.run_server(debug=False)
