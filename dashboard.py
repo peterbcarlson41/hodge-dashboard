@@ -1,5 +1,6 @@
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output
@@ -85,6 +86,23 @@ def create_pie_chart(data, selected_restaurant):
     
     return fig
 
+#Function to create stacked bar plot for the meat presence by restaurant
+def create_meat_stacked_bar_plot(data):
+    # Group the data by "Restaurant" and "Meat Y/N/U" and count the occurrences
+    meat_presence_counts = data.groupby(['Restaurant', 'Meat Y/N/U']).size().unstack(fill_value=0)
+
+    # Create a stacked bar chart using Plotly Express
+    fig = go.Figure(data=[
+        go.Bar(name='Meat - Yes', x=meat_presence_counts.index, y=meat_presence_counts['Y']),
+        go.Bar(name='Meat - No', x=meat_presence_counts.index, y=meat_presence_counts['N']),
+        go.Bar(name='Meat - Unknown', x=meat_presence_counts.index, y=meat_presence_counts['U'])
+    ])
+
+    fig.update_layout(barmode='stack', xaxis_title='Restaurant', yaxis_title='Count',
+                      title='Meat Presence in Restaurants (Stacked Bar Plot)')
+
+    return fig
+
 # Create the Dash app
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server
@@ -148,7 +166,10 @@ app.layout = dbc.Container([
     dbc.Row([
         dbc.Col(dcc.Graph(id='zoomed-stacked-bar'), width=6),  # Zoomed-in stacked bar chart
         dbc.Col(dcc.Graph(id='pie-chart'), width=6),  # Pie chart
-    ])
+    ]),
+    dbc.Row([
+    dbc.Col(dcc.Graph(id='meat-stacked-bar'), width=12),  # Meat presence stacked bar chart
+])
 ])
 
 # Callback to update stacked bar chart, zoomed-in stacked bar chart, and pie chart based on selected values
@@ -157,7 +178,8 @@ app.layout = dbc.Container([
      Output('zoomed-stacked-bar', 'figure'),
      Output('pie-chart', 'figure'),
      Output('mean-bucket-weight', 'children'),
-     Output('median-bucket-weight', 'children')],
+     Output('median-bucket-weight', 'children'),
+     Output('meat-stacked-bar', 'figure')],
     [Input('stacked-bar', 'clickData'),
      Input('type-checklist', 'value'),
      Input('single-ingredient-checklist', 'value'),
@@ -181,11 +203,14 @@ def update_charts(clickData, selected_types, single_ingredient_value, selected_c
     # Calculate mean and median bucket weight values for the selected type(s)
     mean_bucket_weight_selected = filtered_data['Weight'].mean()
     median_bucket_weight_selected = filtered_data['Weight'].median()
+
+    meat_stacked_bar = create_meat_stacked_bar_plot(full_data)
     
     return (
         stacked_bar_updated, zoomed_stacked_bar, pie_chart,
         f"Mean Bucket Weight: {mean_bucket_weight_selected:.2f} lbs",
-        f"Median Bucket Weight: {median_bucket_weight_selected:.2f} lbs"
+        f"Median Bucket Weight: {median_bucket_weight_selected:.2f} lbs",
+        meat_stacked_bar
     )
 
 if __name__ == '__main__':
