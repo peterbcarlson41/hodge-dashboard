@@ -100,6 +100,7 @@ def create_meat_stacked_bar_plot(data):
 
     fig.update_layout(barmode='stack', xaxis_title='Restaurant', yaxis_title='Count',
                       title='Meat Presence in Restaurants (Stacked Bar Plot)')
+    fig.update_xaxes(title='Restaurant Name', tickangle=-45)
 
     return fig
 
@@ -152,6 +153,12 @@ app.layout = dbc.Container([
                 value='all',  # Set the default value to 'all'
                 multi=True,
             )
+        ]),
+    ]),
+    dbc.Row([
+        dbc.Col([
+            html.H6("Show Relative Weights:"),
+            dcc.Switch(id='switch-relative-weights', on=False),
         ]),
     ]),
     dbc.Row([
