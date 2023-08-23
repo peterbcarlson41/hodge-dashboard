@@ -2,6 +2,8 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import dash
+from dash import dash_table
+from dash.dash_table.Format import Format, Scheme, Trim
 from dash import dcc, html
 from dash.dependencies import Input, Output
 import dash_bootstrap_components as dbc
@@ -155,12 +157,7 @@ app.layout = dbc.Container([
             )
         ]),
     ]),
-    dbc.Row([
-        dbc.Col([
-            html.H6("Show Relative Weights:"),
-            dcc.Switch(id='switch-relative-weights', on=False),
-        ]),
-    ]),
+    html.Br(),
     dbc.Row([
         dbc.Col([
             html.H6(id='mean-bucket-weight'),
@@ -175,8 +172,11 @@ app.layout = dbc.Container([
         dbc.Col(dcc.Graph(id='pie-chart'), width=6),  # Pie chart
     ]),
     dbc.Row([
-    dbc.Col(dcc.Graph(id='meat-stacked-bar'), width=12),  # Meat presence stacked bar chart
-])
+        dbc.Col(dcc.Graph(id='meat-stacked-bar'), width=12),  # Meat presence stacked bar chart
+    ]),
+    dbc.Row([
+        dbc.Col(dash_table.DataTable(id='average-weight-table'), width=12)  # Add this line for the table
+    ])
 ])
 
 # Callback to update stacked bar chart, zoomed-in stacked bar chart, and pie chart based on selected values
@@ -186,7 +186,9 @@ app.layout = dbc.Container([
      Output('pie-chart', 'figure'),
      Output('mean-bucket-weight', 'children'),
      Output('median-bucket-weight', 'children'),
-     Output('meat-stacked-bar', 'figure')],
+     Output('meat-stacked-bar', 'figure'),
+     Output('average-weight-table', 'data'),
+     Output('average-weight-table', 'columns')],
     [Input('stacked-bar', 'clickData'),
      Input('type-checklist', 'value'),
      Input('single-ingredient-checklist', 'value'),
@@ -213,11 +215,24 @@ def update_charts(clickData, selected_types, single_ingredient_value, selected_c
 
     meat_stacked_bar = create_meat_stacked_bar_plot(full_data)
     
+   # Calculate the average weight for each Stream and Type combination
+    average_weight_data = filtered_data.groupby(['Type', 'Stream'])['Weight'].mean().reset_index()
+
+    # Define columns for the average weight table
+    average_weight_table_columns = [
+        {'name': 'Type', 'id': 'Type'},
+        {'name': 'Stream', 'id': 'Stream'},
+        {'name': 'Average Weight', 'id': 'Weight', 'type': 'numeric', 
+         'format': Format(precision=4), 'auto_format': True}
+    ]
+
     return (
         stacked_bar_updated, zoomed_stacked_bar, pie_chart,
         f"Mean Bucket Weight: {mean_bucket_weight_selected:.2f} lbs",
         f"Median Bucket Weight: {median_bucket_weight_selected:.2f} lbs",
-        meat_stacked_bar
+        meat_stacked_bar,
+        average_weight_data.to_dict('records'),
+        average_weight_table_columns 
     )
 
 if __name__ == '__main__':
