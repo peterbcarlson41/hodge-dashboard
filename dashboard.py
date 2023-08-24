@@ -184,6 +184,13 @@ app.layout = dbc.Container([
     ]),
     html.Br(),
     dbc.Row([
+        html.Div(
+            "Average Weight by Type and Stream",
+            style={
+                "textAlign": "center",  # Center text horizontally
+            },
+        ),
+        html.Br(),
         dbc.Col(dash_table.DataTable(id='average-weight-table', style_data_conditional=conditional_style), width=12)  # Add this line for the table
     ]),
     html.Br()
