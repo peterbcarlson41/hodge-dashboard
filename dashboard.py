@@ -117,6 +117,14 @@ stacked_bar = create_stacked_bar_plot(
     selected_categories=full_data['Category'].unique()
 )
 
+# Define a CSS style dictionary to set a different background color for "All Buckets" rows
+conditional_style = [
+    {
+        'if': {'filter_query': '{Stream} = "All Buckets"'},
+        'backgroundColor': 'lightgray',  # You can change this color to your preference
+    }
+]
+
 
 # Define the app layout using Dash Bootstrap components
 app.layout = dbc.Container([
@@ -174,9 +182,11 @@ app.layout = dbc.Container([
     dbc.Row([
         dbc.Col(dcc.Graph(id='meat-stacked-bar'), width=12),  # Meat presence stacked bar chart
     ]),
+    html.Br(),
     dbc.Row([
-        dbc.Col(dash_table.DataTable(id='average-weight-table'), width=12)  # Add this line for the table
-    ])
+        dbc.Col(dash_table.DataTable(id='average-weight-table', style_data_conditional=conditional_style), width=12)  # Add this line for the table
+    ]),
+    html.Br()
 ])
 
 # Callback to update stacked bar chart, zoomed-in stacked bar chart, and pie chart based on selected values
@@ -215,15 +225,38 @@ def update_charts(clickData, selected_types, single_ingredient_value, selected_c
 
     meat_stacked_bar = create_meat_stacked_bar_plot(full_data)
     
-   # Calculate the average weight for each Stream and Type combination
+    # Calculate the average weight for each Stream and Type combination
     average_weight_data = filtered_data.groupby(['Type', 'Stream'])['Weight'].mean().reset_index()
+
+    # Calculate the average weight for all buckets that fall under each type
+    average_weight_all_buckets = average_weight_data.groupby('Type')['Weight'].mean().reset_index()
+    average_weight_all_buckets['Stream'] = 'All Buckets'
+
+    # Create a list to store the final rows for the table
+    table_rows = []
+
+    # Iterate through each type
+    for type_name in filtered_data['Type'].unique():
+        type_data = average_weight_data[average_weight_data['Type'] == type_name]
+        
+        # Append rows for individual streams within the type
+        for _, row in type_data.iterrows():
+            table_rows.append([type_name, row['Stream'], row['Weight']])
+        
+        # Append the row for all buckets after the type's individual streams
+        all_buckets_row = average_weight_all_buckets[average_weight_all_buckets['Type'] == type_name]
+        if not all_buckets_row.empty:
+            table_rows.append([type_name, 'All Buckets', all_buckets_row.iloc[0]['Weight']])
+
+    # Create a DataFrame from the collected table rows
+    average_weight_data = pd.DataFrame(table_rows, columns=['Type', 'Stream', 'Average Weight'])
 
     # Define columns for the average weight table
     average_weight_table_columns = [
         {'name': 'Type', 'id': 'Type'},
         {'name': 'Stream', 'id': 'Stream'},
-        {'name': 'Average Weight', 'id': 'Weight', 'type': 'numeric', 
-         'format': Format(precision=4), 'auto_format': True}
+        {'name': 'Average Weight', 'id': 'Average Weight', 'type': 'numeric', 
+        'format': Format(precision=4), 'auto_format': True}
     ]
 
     return (
@@ -234,6 +267,10 @@ def update_charts(clickData, selected_types, single_ingredient_value, selected_c
         average_weight_data.to_dict('records'),
         average_weight_table_columns 
     )
+
+
+
+
 
 if __name__ == '__main__':
     app.run_server(debug=False)
